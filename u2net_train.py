@@ -42,13 +42,13 @@ def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
     print(
         "l0: %3f, l1: %3f, l2: %3f, l3: %3f, l4: %3f, l5: %3f, l6: %3f\n"
         % (
-            loss0.data[0],
-            loss1.data[0],
-            loss2.data[0],
-            loss3.data[0],
-            loss4.data[0],
-            loss5.data[0],
-            loss6.data[0],
+            loss0.item(),
+            loss1.item(),
+            loss2.item(),
+            loss3.item(),
+            loss4.item(),
+            loss5.item(),
+            loss6.item(),
         )
     )
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     os.makedirs(model_name, exist_ok=True)
 
     epoch_num = 100000
-    batch_size_train = 12
+    batch_size_train = 6
     batch_size_val = 1
     train_num = 0
     val_num = 0
@@ -102,8 +102,8 @@ if __name__ == "__main__":
         lbl_name_list=tra_lbl_name_list,
         transform=transforms.Compose(
             [
-                RescaleT(512),
-                RandomCrop(320),
+                RescaleT(320),
+                RandomCrop(288),
                 ToTensorLab(flag=0),
             ]
         ),
@@ -170,8 +170,8 @@ if __name__ == "__main__":
             optimizer.step()
 
             # # print statistics
-            running_loss += loss.data[0]
-            running_tar_loss += loss2.data[0]
+            running_loss += loss.item()
+            running_tar_loss += loss2.item()
 
             # del temporary outputs and loss
             del d0, d1, d2, d3, d4, d5, d6, loss2, loss
