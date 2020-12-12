@@ -1,3 +1,4 @@
+import os
 import torch
 import torchvision
 from torch.autograd import Variable
@@ -59,13 +60,14 @@ def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
 model_name = "u2net"  #'u2netp'
 
 data_dir = os.path.join(os.getcwd(), "train_data" + os.sep)
-tra_image_dir = os.path.join("DUTS", "DUTS-TR", "DUTS-TR", "im_aug" + os.sep)
-tra_label_dir = os.path.join("DUTS", "DUTS-TR", "DUTS-TR", "gt_aug" + os.sep)
+tra_image_dir = os.path.join("data", "DUTS-TR", "DUTS-TR-Image" + os.sep)
+tra_label_dir = os.path.join("data", "DUTS-TR", "DUTS-TR-Mask" + os.sep)
 
 image_ext = ".jpg"
 label_ext = ".png"
 
 model_dir = os.path.join(os.getcwd(), "saved_models", model_name + os.sep)
+os.makedirs(model_name, exist_ok=True)
 
 epoch_num = 100000
 batch_size_train = 12
@@ -97,7 +99,13 @@ train_num = len(tra_img_name_list)
 salobj_dataset = SalObjDataset(
     img_name_list=tra_img_name_list,
     lbl_name_list=tra_lbl_name_list,
-    transform=transforms.Compose([RescaleT(320), RandomCrop(288), ToTensorLab(flag=0)]),
+    transform=transforms.Compose(
+        [
+            RescaleT(512),
+            RandomCrop(320),
+            ToTensorLab(flag=0),
+        ]
+    ),
 )
 salobj_dataloader = DataLoader(
     salobj_dataset, batch_size=batch_size_train, shuffle=True, num_workers=1
