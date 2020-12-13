@@ -83,7 +83,7 @@ if __name__ == "__main__":
     label_ext = ".png"
 
     model_dir = os.path.join(os.getcwd(), "saved_models", model_name + os.sep)
-    os.makedirs(model_name, exist_ok=True)
+    os.makedirs(model_dir, exist_ok=True)
 
     epoch_num = 100000
     batch_size_train = 6
