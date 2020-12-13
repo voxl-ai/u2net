@@ -3,25 +3,21 @@ import torch.nn as nn
 from torchvision import models
 import torch.nn.functional as F
 import torch.quantization
+import torch.nn.intrinsic.qat as qat
 from torch.quantization import QuantStub, DeQuantStub
 
+default_config = torch.quantization.get_default_qconfig()
 
-class REBNCONV(nn.Module):
-    def __init__(self, in_ch=3, out_ch=3, dirate=1):
-        super(REBNCONV, self).__init__()
 
-        self.conv_s1 = nn.Conv2d(
-            in_ch, out_ch, 3, padding=1 * dirate, dilation=1 * dirate
-        )
-        self.bn_s1 = nn.BatchNorm2d(out_ch)
-        self.relu_s1 = nn.ReLU(inplace=True)
-
-    def forward(self, x):
-
-        hx = x
-        xout = self.relu_s1(self.bn_s1(self.conv_s1(hx)))
-
-        return xout
+def REBNCONV(in_ch=3, out_ch=3, dirate=1):
+    return qat.ConvBnReLU2d(
+        in_ch,
+        out_ch,
+        3,
+        padding=1 * dirate,
+        dilation=1 * dirate,
+        qconfig=default_config,
+    )
 
 
 ## upsample tensor 'src' to have the same spatial size with tensor 'tar'
@@ -439,13 +435,6 @@ class U2NET(nn.Module):
         )
         return out
 
-    def fuse_model(self):
-        for m in self.modules():
-            if type(m) == REBNCONV:
-                torch.quantization.fuse_modules(
-                    m, ["conv_s1", "bn_s1", "relu_s1"], inplace=True
-                )
-
 
 ### U^2-Net small ###
 class U2NETP(nn.Module):
@@ -567,10 +556,3 @@ class U2NETP(nn.Module):
             )
         )
         return out
-
-    def fuse_model(self):
-        for m in self.modules():
-            if type(m) == REBNCONV:
-                torch.quantization.fuse_modules(
-                    m, ["conv_s1", "bn_s1", "relu_s1"], inplace=True
-                )
