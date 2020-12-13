@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     net.fuse_model()
     net.qconfig = torch.quantization.default_qconfig
-    torch.quantization.prepare(net, inplace=True)
+    torch.quantization.prepare_qat(net, inplace=True)
 
     # ------- 4. define optimizer --------
     print("---define optimizer...")
@@ -212,7 +212,8 @@ if __name__ == "__main__":
                 )
 
             if ite_num % save_frq == 0:
-                torch.quantization.convert(net, inplace=True, remove_qconfig=False)
+                # net.cpu().eval()
+                # torch.quantization.convert(net, inplace=True, remove_qconfig=True)
                 torch.save(
                     net.state_dict(),
                     model_dir
