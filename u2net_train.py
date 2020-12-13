@@ -141,6 +141,7 @@ if __name__ == "__main__":
 
     scaler = amp.GradScaler()
     net.qconfig = torch.quantization.default_qconfig
+    net = torch.quantization.QuantWrapper(net)
     torch.quantization.prepare_qat(net, inplace=True)
 
     # ------- 4. define optimizer --------
