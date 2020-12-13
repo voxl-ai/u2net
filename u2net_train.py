@@ -1,6 +1,7 @@
 import os
 import torch
 import torchvision
+import torch.quantization
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,6 +26,7 @@ from model import U2NETP
 
 # ------- 1. define loss function --------
 
+torch.backends.quantized.engine = "fbgemm"
 bce_loss = nn.BCELoss(size_average=True)
 
 
@@ -53,6 +55,19 @@ def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
     )
 
     return loss0, loss
+
+
+def weight_init(m):
+    if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode="fan_out")
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.ones_(m.weight)
+        nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.Linear):
+        nn.init.normal_(m.weight, 0, 0.01)
+        nn.init.zeros_(m.bias)
 
 
 if __name__ == "__main__":
@@ -119,8 +134,13 @@ if __name__ == "__main__":
     else:  # elif model_name == "u2netp":
         net = U2NETP(3, 1)
 
+    net.apply(weight_init)
     if torch.cuda.is_available():
         net.cuda()
+
+    net.fuse_model()
+    net.qconfig = torch.quantization.default_qconfig
+    torch.quantization.prepare(net, inplace=True)
 
     # ------- 4. define optimizer --------
     print("---define optimizer...")
@@ -192,7 +212,7 @@ if __name__ == "__main__":
                 )
 
             if ite_num % save_frq == 0:
-
+                torch.quantization.convert(net, inplace=True, remove_qconfig=False)
                 torch.save(
                     net.state_dict(),
                     model_dir
@@ -204,6 +224,7 @@ if __name__ == "__main__":
                         running_tar_loss / ite_num4val,
                     ),
                 )
+
                 running_loss = 0.0
                 running_tar_loss = 0.0
                 net.train()  # resume train
