@@ -5,7 +5,7 @@ import torch.quantization
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-
+from time import time
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import torch.optim as optim
@@ -151,6 +151,7 @@ if __name__ == "__main__":
     # ------- 5. training process --------
     print("---start training...")
     ite_num = 0
+    running_time = 0.0
     running_loss = 0.0
     running_tar_loss = 0.0
     ite_num4val = 0
@@ -183,6 +184,7 @@ if __name__ == "__main__":
             optimizer.zero_grad()
 
             # forward + backward + optimize
+            t0 = time()
             d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
             loss2, loss = muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
 
@@ -190,6 +192,7 @@ if __name__ == "__main__":
             optimizer.step()
 
             # # print statistics
+            running_time += time() - t0
             running_loss += loss.item()
             running_tar_loss += loss2.item()
 
@@ -199,7 +202,7 @@ if __name__ == "__main__":
             if ite_num % 10 == 0:
                 print()
                 print(
-                    "[epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f "
+                    "[epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f, step time: %3f"
                     % (
                         epoch + 1,
                         epoch_num,
@@ -208,6 +211,7 @@ if __name__ == "__main__":
                         ite_num,
                         running_loss / ite_num4val,
                         running_tar_loss / ite_num4val,
+                        running_time / ite_num4val,
                     )
                 )
 
