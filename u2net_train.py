@@ -4,6 +4,7 @@ import torchvision
 import torch.quantization
 from torch.autograd import Variable
 import torch.nn as nn
+import torch.cuda.amp as amp
 import torch.nn.functional as F
 from time import time
 from torch.utils.data import Dataset, DataLoader
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     os.makedirs(model_dir, exist_ok=True)
 
     epoch_num = 100000
-    batch_size_train = 6
+    batch_size_train = 8
     batch_size_val = 1
     train_num = 0
     val_num = 0
@@ -138,7 +139,7 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         net.cuda()
 
-    net.fuse_model()
+    scaler = amp.GradScaler()
     net.qconfig = torch.quantization.default_qconfig
     torch.quantization.prepare_qat(net, inplace=True)
 
@@ -185,11 +186,16 @@ if __name__ == "__main__":
 
             # forward + backward + optimize
             t0 = time()
-            d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
+            with amp.autocast():
+                d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
+            d0, d1, d2, d3, d4, d5, d6 = map(
+                lambda x: x.float(), (d0, d1, d2, d3, d4, d5, d6)
+            )
             loss2, loss = muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
 
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
             # # print statistics
             running_time += time() - t0
